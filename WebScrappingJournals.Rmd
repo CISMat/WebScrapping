@@ -1,0 +1,103 @@
+---
+title: "Web Scrapping (REVISTAS CIENTIFICAS)"
+author: "CISM"
+date: "`r Sys.Date()`"
+output:
+  rmdformats::html_clean:
+    highlight: kate
+---
+
+
+```{r setup, echo=FALSE, cache=FALSE, include=FALSE}
+library(knitr)
+library(rmdformats)
+library(tidyverse)
+library(rvest)
+library(stringr)
+
+## Global options
+options(max.print="75")
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	cache = TRUE,
+	comment = NA,
+	prompt = FALSE,
+	tidy = TRUE
+)
+opts_knit$set(width=75)
+```
+
+En el presente proyecto, aplicaremos tecnicas de Web Scrapping para evaluar las revistas cientificas de mayor relevancia (ranking), relacionadas con un tema de interés.
+
+## Introducción 
+
+Para la clasificacion utilizaremos la página de rankings de revistas cientificas [Scimago](http://scimagojr.com) y las siguientes fuciones:
+
+```{r}
+ObtenerData<-function(revista){
+  nombre = revista %>% html_node(css = 'span') %>% html_text()
+  pais = revista %>% html_node(xpath = 'text()[1]') %>% html_text()
+  editorial = revista %>% html_node(xpath = "text()[2]") %>% html_text()
+  url = "https://www.scimagojr.com/"
+  link = revista %>% html_attr("href")
+  link = paste0(url,link) 
+  
+  revistasDF = data.frame(Journal=nombre, Pais=pais, Editorial=editorial, Link=link, stringsAsFactors = F)
+  
+  return(revistasDF)
+}
+
+
+ObtenerRevistas<-function(busqueda='data science'){
+url = "https://www.scimagojr.com/"
+html_dir = paste0(url,"journalsearch.php?q=",gsub(" ","+",busqueda),"")
+resultados=read_html(html_dir)
+revistas = resultados %>% 
+    html_nodes(xpath = '/html/body/div/div/a')
+revistasDF = map(revistas,ObtenerData)
+revistasDF = bind_rows(revistasDF)
+  revistasDF = revistasDF[!is.na(revistasDF$Journal),]
+  return(revistasDF)
+}
+```
+
+Para encontrar los _css_ y _xpath_ es necesario revisar el codigo fuente de la pagina [Scimago](http://scimagojr.com)
+
+# Ejecución 
+
+Notar que en las funciones creadas anteriormente, se ha establecido: __busqueda__=_"data science"_
+
+Por lo tanto, visualizaremos los primeros 10 resultados.
+
+```{r}
+
+df = ObtenerRevistas()
+
+# Visualizamos los 10 primeros registros 
+
+knitr::kable(
+head(df,10),format="markdown"
+)
+```
+
+Ahora, busquemos el ranking de las disitintas revistas. Para esto es necesario entrar en cada uno de los links del data frame anterior y nuevamente mediante web scrapping, seleccionaremos el ranking.
+
+<a href="https://www.scimagojr.com/journalsearch.php?q=10700153302&amp;tip=sid&amp;exact=no" title="SCImago Journal &amp; Country Rank"> ejemplo
+
+<img border="0" src="https://www.scimagojr.com/journal_img.php?id=10700153302" alt="SCImago Journal &amp; Country Rank"  /></a>
+```{r}
+journal=read_html(df$Link[13])
+hINDEX = journal %>% html_node(xpath = '/html/body/div/table/tbody/tr/td/div') %>% html_text()
+imagen = journal %>% html_node(xpath = '/html/body/div/div/img')%>% html_attr("src")
+
+include_graphics(imagen)
+
+table(Cal=hINDEX,Q=include_graphics(imagen))
+
+```
+
+
+
+
