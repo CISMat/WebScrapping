@@ -1,0 +1,79 @@
+---
+title: "Extracción Datos Taller 2"
+author: "Grupo 10"
+date: "19/6/2020"
+output: html_document
+---
+
+0. Cargamos las librerías necesarias
+```{r setup, include=TRUE, message=FALSE, warning=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(dplyr) 
+library(rvest) 
+library(stringr) 
+library(purrr)
+
+```
+
+1. Funciones creadas para Google News
+```{r}
+
+obtieneNoticiasData = function(noticia){
+  news_pag = "https://news.google.com/"
+  titular = noticia %>% html_node("h3") %>% html_text()
+  fecha = noticia %>% html_node("time") %>% html_attr("datetime")
+  diario = noticia %>% html_node("a.wEwyrc.AVN2gc.uQIVzc.Sksgp") %>% html_text()
+  link_enmascarado = noticia %>% html_node("h3 a") %>% html_attr("href")
+  link_enmascarado = paste0(news_pag,substring(link_enmascarado,3))  
+  link_enmascarado = read_html(link_enmascarado)
+  link = link_enmascarado %>% 
+    html_node(css='c-wiz div div c-wiz div a') %>% 
+    html_attr("href")
+  noticiaDF = data.frame(Titular=titular, Fecha=fecha, Diario=diario, Link=link, stringsAsFactors = F)
+  return(noticiaDF)
+}
+
+obtieneNoticiasBusqueda = function(busqueda){
+  news_pag = "https://news.google.com/"
+  html_dir = paste0(news_pag,"search?q=",gsub(" ","+",busqueda),"&hl=es-419&gl=US&ceid=US:es-419")
+  google_news = read_html(html_dir)
+  noticias = google_news %>% 
+    html_nodes(css = "c-wiz div div div div main c-wiz div div div article")
+  noticiasDF = map(noticias,obtieneNoticiasData)
+  noticiasDF = bind_rows(noticiasDF)
+  noticiasDF = noticiasDF[!is.na(noticiasDF$Titular),]
+  return(noticiasDF)
+}
+
+```
+
+2. Creamos un data frame para los titulares respecto a Venta de chips Movistar
+```{r}
+
+noticiasMovistarDF = obtieneNoticiasBusqueda(busqueda="Movistar venta de Chips Ecuador when:100d")
+
+# Visualizamos los 5 primeros registros 
+
+head(noticiasMovistarDF,5)
+
+```
+
+3. Lectura de links de una noticia en particular
+```{r}
+
+#Seleccionamos la segunda noticia 
+
+noticia = read_html(noticiasMovistarDF$Link[3])
+path = '//*[@id="contenedor"]/section'
+text_nodes = noticia %>% 
+  html_nodes(xpath = path) %>% 
+  html_children()
+text = text_nodes %>% 
+  html_text()
+text = paste0(text, collapse = " ")
+
+text
+```
+

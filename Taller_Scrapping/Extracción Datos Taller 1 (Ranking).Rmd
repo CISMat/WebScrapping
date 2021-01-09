@@ -1,0 +1,65 @@
+---
+title: "Extracción Datos Taller 1 (Ranking)"
+author: "Grupo 10"
+date: "19/6/2020"
+output: html_document
+---
+
+0. Cargamos las librerías necesarias
+
+```{r setup, include=TRUE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(rvest)
+library(stringr)
+```
+
+1. Escojemos una pagina para realizar Web Scrapping
+
+```{r}
+# Seleccionamos el url de una pagina de rankings
+
+base_url <- "https://hipertextual.com/archivo/2010/02/las-companias-moviles-mas-grandes-del-mundo/"
+
+# Leemos el contenigo de la pagina web
+
+webpage <- read_html(base_url)
+
+```
+
+2. Indentificamos el Xpath y extraemos la información
+
+```{r}
+
+empresas <- html_nodes(webpage, xpath = "/html/body/div[1]/main/div[2]/div[1]/ul/li")
+
+empresas <- as.character(html_text(empresas))
+
+empresas
+
+```
+
+3. Hacemos un tratamiento de los datos y exponemos las empresas del ranking
+
+```{r}
+
+# Verificamos cuantas comas existen
+str_count(empresas, ",")
+
+# Buscamos la posicion en la cual esta la coma 
+posiciones<-as.data.frame(str_locate(empresas, ","))
+
+nombres <-function(x){
+  y<-c()
+  for(i in 1:length(x)){
+    y[i]<-as.character(substring(empresas[i], 4, x[i]-1))
+  }
+  return(y)
+}
+
+nombres(posiciones$start)
+
+
+```
+

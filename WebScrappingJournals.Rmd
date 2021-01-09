@@ -98,6 +98,35 @@ table(Cal=hINDEX,Q=include_graphics(imagen))
 
 ```
 
+```{r}
+journal=read_html(df$Link[2])
+hINDEX = journal %>% html_node(xpath = '/html/body/div/table/tbody/tr/td/div') %>% html_text()
+imagen = journal %>% html_node(xpath = '/html/body/div/div/img')%>% html_attr("src")
 
+include_graphics(imagen)
 
+table(Cal=hINDEX,Q=include_graphics(imagen))
 
+```
+
+# Caso Particular
+
+```{r}
+
+df = ObtenerRevistas(busqueda='Physics')
+
+# Visualizamos los 10 primeros registros 
+
+knitr::kable(
+head(df,10),format="markdown"
+)
+
+journal=read_html(df$Link[1])
+hINDEX = journal %>% html_node(xpath = '/html/body/div/table/tbody/tr/td/div') %>% html_text()
+imagen = journal %>% html_node(xpath = '/html/body/div/div/img')%>% html_attr("src")
+
+include_graphics(imagen)
+
+table(Cal=hINDEX,Q=include_graphics(imagen))
+
+```
